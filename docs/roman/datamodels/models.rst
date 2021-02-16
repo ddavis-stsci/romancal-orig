@@ -5,8 +5,8 @@ About models
 
 The purpose of the data model is to abstract away the peculiarities of
 the underlying file format.  The same data model may be used for data
-created from scratch in memory, or loaded from FITS or ASDF files or
-some future file format.
+created from scratch in memory, or loaded from ASDF files or some future file
+format.
 
 
 Hierarchy of models
@@ -39,8 +39,11 @@ To create a new `ImageModel`, just call its constructor.  To create a
 new model where all of the arrays will have default values, simply
 provide a shape as the first argument::
 
+.. doctest-skip::
+
     from romancal.datamodels import ImageModel
     with ImageModel((1024, 1024)) as im:
+
         ...
 
 In this form, the memory for the arrays will not be allocated until
@@ -66,9 +69,7 @@ Creating a data model from a file
 The `romancal.datamodels.open` function is a convenient way to create a
 model from a file on disk.  It may be passed any of the following:
 
-    - a path to a FITS file
     - a path to an ASDF file
-    - a `astropy.io.asdf.HDUList` object
     - a readable file-like object
 
 The file will be opened, and based on the nature of the data in the
@@ -78,9 +79,9 @@ returned.  You will generally want to instantiate a model using a
 `with` statement so that the file will be closed automatically when
 exiting the `with` block.
 
-::
+.. doctest-skip::
 
-    from jwst import datamodels
+    from romancal import datamodels
     with datamodels.open("myimage.asdf") as im:
         assert isinstance(im, datamodels.ImageModel)
 
@@ -108,7 +109,7 @@ the `format` keyword argument::
 
 .. note::
 
-   Unlike ``astropy.io.asdf``, `save` always clobbers the output file.
+   This `save` always clobbers the output file.
 
 
 Copying a model
@@ -145,8 +146,8 @@ history::
     entry =  util.create_history_entry("Processed through the frobulator step")
     model.history.append(entry)
 
-These history entries are stored in ``HISTORY`` keywords when saving
-to FITS format. As an option, history entries can contain a dictionary
+These history entries are stored in ``HISTORY`` attributes when saving
+to ASDF format. As an option, history entries can contain a dictionary
 with a description of the software used. The dictionary must have the
 following keys:
 
@@ -155,13 +156,12 @@ following keys:
   ``homepage``: A URI to the homepage of the software
   ``version``: The version of the software
 
-The calling sequence to create  a history entry with the software
+The calling sequence to create a history entry with the software
 description is::
 
   entry =  util.create_history_entry(description, software=software_dict)
 
-where the second argument is the dictionary with the keywords
-mentioned.
+where the second argument is the dictionary with the attributes mentioned.
 
 Looking at the contents of a model
 ----------------------------------
@@ -192,8 +192,8 @@ The number of displayed rows is controlled by the ``max_row`` argument::
   │ ├─coordinates (dict) ...
   │ └─28 not shown
   ├─var_poisson (ndarray): shape=(2048, 2048), dtype=float32
-  ├─var_rnoise (ndarray): shape=(2048, 2048), dtype=float32
-  └─extra_fits (dict) ...
+  └─var_rnoise (ndarray): shape=(2048, 2048), dtype=float32 ...
+
   Some nodes not shown.
 
 
@@ -211,104 +211,3 @@ Searching a model
   │ └─filter (str): F170LP
   └─ref_file (dict)
     └─filteroffset (dict)
-
-
-
-Converting from ``astropy.io.asdf``
-===================================
-
-This section describes how to port code that uses ``astropy.io.asdf``
-to use `romancal.datamodels`.
-
-Opening a file
---------------
-
-Instead of::
-
-    astropy.io.asdf.open("myfile.asdf")
-
-use::
-
-    from romancal.datamodels import ImageModel
-    with ImageModel("myfile.asdf") as model:
-        ...
-
-In place of `ImageModel`, use the type of data one expects to find in
-the file.  For example, if spectrographic data is expected, use
-`SpecModel`.  If it doesn't matter (perhaps the application is only
-sorting FITS files into categories) use the base class `DataModel`.
-
-An alternative is to use::
-
-    from jwst import datamodels
-    with datamodels.open("myfile.asdf") as model:
-        ...
-
-The `datamodels.open()` method checks if the `DATAMODL` FITS keyword has
-been set, which records the DataModel that was used to create the file.
-If the keyword is not set, then `datamodels.open()` does its best to
-guess the best DataModel to use.
-
-Accessing data
---------------
-
-Data should be accessed through one of the pre-defined data members on
-the model (`data`, `dq`, `err`).  There is no longer a need to hunt
-through the HDU list to find the data.
-
-Instead of::
-
-    hdulist['SCI'].data
-
-use::
-
-    model.data
-
-Accessing keywords
-------------------
-
-The data model hides direct access to FITS header keywords.  Instead,
-use the :ref:`metadata` tree.
-
-There is a convenience method, `find_fits_keyword` to find where a
-FITS keyword is used in the metadata tree::
-
-    >>> from romancal.datamodels import DataModel
-    >>> # First, create a model of the desired type
-    >>> model = DataModel()
-    >>> model.find_fits_keyword('DATE-OBS')
-    [u'meta.observation.date']
-
-This information shows that instead of::
-
-    print(hdulist[0].header['DATE-OBS'])
-
-use::
-
-    print(model.meta.observation.date)
-
-Extra FITS keywords
--------------------
-
-When loading arbitrary FITS files, there may be keywords that are not
-listed in the schema for that data model.  These "extra" FITS keywords
-are put under the model in the `_extra_fits` namespace.
-
-Under the `_extra_fits` namespace is a section for each header data
-unit, and under those are the extra FITS keywords.  For example, if
-the FITS file contains a keyword `FOO` in the primary header, its
-value can be obtained using::
-
-    model._extra_fits.PRIMARY.FOO
-
-This feature is useful to retain any extra keywords from input files
-to output products.
-
-To get a list of everything in `_extra_fits`::
-
-    model._extra_fits._instance
-
-returns a dictionary of of the instance at the model._extra_fits node.
-
-`_instance` can be used at any node in the tree to return a dictionary
-of rest of the tree structure at that node.

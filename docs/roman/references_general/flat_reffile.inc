@@ -15,44 +15,31 @@ It is used.
 
 Type Specific Keywords for FLAT
 +++++++++++++++++++++++++++++++
-In addition to the standard reference file keywords listed above,
-the following keywords are *required* in FLAT reference files,
+In addition to the standard reference file attributes listed above,
+the following attributes are *required* in FLAT reference files,
 because they are used as CRDS selectors
 (see :ref:`flat_selectors`):
 
-=========  ==============================  =============================
-Keyword    Data Model Name                 Instruments
-=========  ==============================  =============================
-DETECTOR   model.meta.instrument.detector  All
-EXP_TYPE   model.meta.exposure.type        
-FILTER     model.meta.instrument.filter
-BAND       model.meta.instrument.band      
-READPATT   model.meta.exposure.readpatt    
-GRATING    model.meta.instrument.grating   
-=========  ==============================  =============================
+===============   ======================================  ==============
+Attribute           Fully qualified path                   Instruments
+===============   ======================================  ==============
+detector           model.meta.instrument.detector          WFI
+exptype            model.meta.exposure.type
+optical_element    model.meta.instrument.optical_element
+===============   ======================================  ==============
 
 Reference File Format
 +++++++++++++++++++++
-FLAT reference files are FITS format, with 3 IMAGE extensions
-and 1 BINTABLE extension. The FITS primary HDU does not contain a data array.
+
+FLAT reference files are ASDF format, with 3 data arrays.
 The format and content of the file is as follows:
 
-=======  ========  =====  ==============  =========
-EXTNAME  XTENSION  NAXIS  Dimensions      Data type
-=======  ========  =====  ==============  =========
-SCI      IMAGE       2    ncols x nrows   float
-ERR      IMAGE       2    ncols x nrows   float
-DQ       IMAGE       2    ncols x nrows   integer
-DQ_DEF   BINTABLE    2    TFIELDS = 4     N/A
-=======  ========  =====  ==============  =========
+=======  ============ ==============  =============
+Data      Array Type   Dimensions       Data type
+=======  ============ ==============  =============
+data      NDArray      4096 x 4096      float32
+err       NDArray      4096 x 4096      float32
+dq        NDArray      4096 x 4096      uint16
+=======  ============ ==============  =============
 
-The ``DQ_DEF`` table extension lists the bit assignments for the flag conditions
-used in the DQ array.
-
-.. include:: ../includes/dq_def.inc
-
-For application to imaging data, the FITS file contains a single set of SCI,
-ERR, DQ, and DQ_DEF extensions.  Image dimensions should be 2048x2048 for the
-NIR detectors and 1032x1024 for MIRI (i.e. they include reference pixels),
-unless data were taken in subarray mode.
-
+The ASDF file contains a single set of data, err, and dq arrays.

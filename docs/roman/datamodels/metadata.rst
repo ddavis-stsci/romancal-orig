@@ -11,8 +11,10 @@ observation was made::
     print(model.meta.observation.date)
 
 Metadata values are automatically type-checked against the schema when
-they are set. Therefore, setting a keyword which expects a number to a
+they are set. Therefore, setting a attribute which expects a number to a
 string will raise an exception::
+
+.. doctest-skip::
 
     >>> from romancal.datamodels import ImageModel
     >>> model = ImageModel()
@@ -34,6 +36,8 @@ There is also a utility method for finding elements in the metadata
 schema.  `search_schema` will search the schema for the given
 substring in metadata names as well as their documentation.  The
 search is case-insensitive::
+
+.. doctest-skip::
 
     >>> from romancal.datamodels import ImageModel
     >>> # Create a model of the desired type
@@ -109,7 +113,7 @@ When accessing the items of the list, the result is a normal metadata
 object where the attributes are type-checked::
 
 .. doctest-skip::
-  
+
     >>> trans = model.meta.transformations[0]
     >>> print(trans)
     <romancal.datamodels.schema.Transformations object at 0x123a810>
@@ -138,13 +142,13 @@ learning about JSON schema is the book `Understanding JSON Schema
 mapping from Javascript to Python concepts (such as Javascript “array”
 == Python “list”) is added where applicable.
 
-In addition to the standard JSON Schema keywords, ``romancal.datamodels``
-also supports the following additional keywords.
+In addition to the standard JSON Schema metadata, ``romancal.datamodels``
+also supports the following additional metadata.
 
 Arrays
 ''''''
 
-The following keywords have to do with validating n-dimensional arrays:
+The following metadata have to do with validating n-dimensional arrays:
 
 - ``ndim``: The number of dimensions of the array.
 
@@ -178,18 +182,3 @@ since this would make files less portable).
   - ``shape`` (optional): The shape of the data in the column.
     May be either an integer (for a single-dimensional shape),
     or a list of integers.
-
-FITS-specific Schema Attributes
-'''''''''''''''''''''''''''''''
-
-`romancal.datamodels` also adds some new keys to the schema language in
-order to handle reading and writing FITS files.  These attributes all
-have the prefix ``fits_``.
-
-- ``fits_keyword``: Specifies the FITS keyword to store the value in.
-  Must be a string with a maximum length of 8 characters.
-
-- ``fits_hdu``: Specifies the FITS HDU to store the value in.  May be
-  a number (to specify the nth HDU) or a name (to specify the
-  extension with the given ``EXTNAME``).  By default this is set to 0,
-  and therefore refers to the primary HDU.

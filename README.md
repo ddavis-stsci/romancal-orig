@@ -1,8 +1,9 @@
 # Roman Calibration Pipeline
 
-[![Documentation Status](https://readthedocs.org/projects/roman-pipeline/badge/?version=latest)](http://roman-pipeline.readthedocs.io/en/latest/?badge=latest)
-[![Build Status](https://travis-ci.org/spacetelescope/roman.svg?branch=master)](https://travis-ci.org/spacetelescope/roman)
-[![codecov](https://codecov.io/gh/spacetelescope/roman/branch/master/graph/badge.svg)](https://codecov.io/gh/spacetelescope/roman)
+
+[![Documentation Status](https://readthedocs.org/projects/roman-cal-pipeline/badge/?version=latest)](https://roman-cal-pipeline.readthedocs.io/en/latest/?badge=latest)
+![Roman CI](https://github.com/spacetelescope/romancal/workflows/CI/badge.svg)
+[![codecov](https://codecov.io/gh/spacetelescope/romancal/branch/main/graph/badge.svg?token=S6KW6J7FZP)](https://codecov.io/gh/spacetelescope/romancal)
 [![Powered by STScI Badge](https://img.shields.io/badge/powered%20by-STScI-blue.svg?colorA=707170&colorB=3e8ddd&style=flat)](http://www.stsci.edu)
 [![Powered by Astropy Badge](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
@@ -69,7 +70,7 @@ Github master branch:
     conda create -n <env_name> python
     conda activate <env_name>
     pip install git+https://github.com/spacetelescope/romancal
- 
+
 
 ### Installing a DMS Operational Build
 
@@ -192,12 +193,30 @@ contact the [ROMAN Help Desk](https://romanhelp.stsci.edu).
 
 | roman tag | DMS build | CRDS_CONTEXT |   Date     |          Notes                                |
 | -------- | --------- | ------------ | ---------- | ----------------------------------------------|
+| 0.1.0    | 0.0       |  003         | Nov  2020  | Release for Build 0.0
 
 Note: CRDS_CONTEXT values flagged with an asterisk in the above table are estimates
 (formal CONTEXT deliveries are only provided with final builds).
 
 
 ## Unit Tests
+
+### Setup
+
+The test suite require access to a CRDS cache, but currently (2021-02-09) the shared /grp/crds
+cache does not include Roman files.  Developers inside the STScI network can sync a cache from
+roman-crds-dev.stsci.edu (if working from home, be sure to connect to the VPN first):
+
+```bash
+$ export CRDS_SERVER_URL=https://roman-crds-dev.stsci.edu
+$ export CRDS_PATH=$HOME/roman-crds-dev-cache
+$ crds sync --contexts roman-edit
+```
+
+The CRDS_READONLY_CACHE variable should not be set, since references will need to be downloaded
+to your local cache as they are requested.
+
+### Running tests
 
 Unit tests can be run via `pytest`.  Within the top level of your local `roman` repo checkout:
 
@@ -210,35 +229,7 @@ Need to parallelize your test runs over 8 cores?
     pytest -n 8
 
 
+
 ## Regression Tests
 
-Latest regression test results can be found here (STScI staff only):
-
-https://plwishmaster.stsci.edu:8081/job/RT/job/ROMAN/
-
-The test builds start at 6pm local Baltimore time Monday through Saturday on `jwcalibdev`.
-
-To run the regression tests on your local machine, get the test dependencies
-and set the environment variable TEST_BIGDATA to our Artifactory server
-(STSci staff members only):
-
-    pip install -e .[test]
-    export TEST_BIGDATA=https://bytesalad.stsci.edu/artifactory
-
-To run all the regression tests:
-
-    pytest --bigdata roman/regtest
-
-You can control where the test results are written with the
-`--basetemp=<PATH>` arg to `pytest`.  _NOTE that `pytest` will wipe this directory clean
-for each test session, so make sure it is a scratch area._
-
-If you would like to run a specific test, find its name or ID and use the `-k` option:
-
-    pytest --bigdata roman/regtest -k nirspec
-
-If developers need to update the truth files in our nightly regression tests,
-there are instructions in the repository wiki.
-
-https://github.com/spacetelescope/roman/wiki/Maintaining-Regression-Tests
-
+TBD
