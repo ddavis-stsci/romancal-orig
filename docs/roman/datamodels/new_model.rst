@@ -11,10 +11,10 @@ For further reading and details, see the reference materials in
 :ref:`metadata`.
 
 In this tutorial, we'll go through the process of creating a new type
-of model for a file format used for storing the bad pixel mask for
-JWST's MIRI instrument.  This file format has a 2D array containing a
-bit field for each of the pixels, and a table describing what each of
-the bits in the array means.
+of model for a file format used for storing the bad pixel mask for a 
+hypothetical Roman instrument called "MY_WFI".  This file format has a 2D array 
+containing a bit field for each of the pixels, and a table describing what 
+each of the bits in the array means.
 
 .. note::
 
@@ -82,7 +82,7 @@ type "object", and should include the core schema:
 .. code-block:: yaml
 
   allOf:
-     - $ref: "http://roman.stsci.edu/schemas/core.schema.yaml"
+     - $ref: "http://romancal.stsci.edu/schemas/core.schema.yaml"
      - type: object
        properties:
           ...
@@ -102,13 +102,13 @@ Python code.  For example, to refer to a (hypothetical)
 ``my_instrument`` schema that ships with a Python package called
 ``astroboy``, use the following URL::
 
-  http://roman.stsci.edu/schemas/astroboy/my_instrument.schema.yaml
+  http://romancal.stsci.edu/schemas/astroboy/my_instrument.schema.yaml
 
 The "package" portion may be omitted to refer to schemas in the
 `romancal.datamodels` core, which is how we arrive at the URL we're using
 here::
 
-  http://roman.stsci.edu/schemas/core.schema.yaml
+  http://romancal.stsci.edu/schemas/core.schema.yaml
 
 .. note::
 
@@ -122,7 +122,7 @@ here::
 
 The next part of the file describes the array data, that is, things
 that are Numpy arrays on the Python side and images or tables on the
-FITS side.
+ASDF side.
 
 First, we describe the main ``"dq"`` array.  It's declared to be
 2-dimensional, and each element is an unsigned 32-bit integer:
@@ -132,7 +132,6 @@ First, we describe the main ``"dq"`` array.  It's declared to be
     properties:
       dq:
         title: Bad pixel mask
-        fits_hdu: DQ
         default: 0
         ndim: 2
         datatype: uint16
@@ -152,7 +151,6 @@ bit fields and their meanings.  This table has four columns:
 
         dq_def:
           title: DQ flag definitions
-          fits_hdu: DQ_DEF
           dtype:
             - name: BIT
               datatype: uint32
@@ -168,7 +166,7 @@ And finally, we add a metadata element that is specific to this
 format.  To avoid recomputing it repeatedly, we'd like to store a sum
 of all of the "bad" (i.e. non-zero) pixels stored in the bad pixel
 mask array.  In the model, we want to refer to this value as
-``model.meta.bad_pixel_count``.  In the FITS file, lets store this in
+``model.meta.bad_pixel_count``.  In the ASDF file, lets store this in
 the primary header in a keyword named ``BPCOUNT``:
 
 .. code-block:: yaml
@@ -178,7 +176,7 @@ the primary header in a keyword named ``BPCOUNT``:
             bad_pixel_count:
               type: integer
               title: Total count of all bad pixels
-              fits_keyword: BPCOUNT
+              keyword: BPCOUNT
 
 
 That's all there is to the schema file, and that's the hardest part.
@@ -198,7 +196,7 @@ Then we create a new Python class that inherits from `DataModel`, and
 set its `schema_url` class member to point to the schema that we just
 defined above::
 
-  class MiriBadPixelMaskModel(DataModel):
+  class NewBadPixelMaskModel(DataModel):
       schema_url = "bad_pixel_mask.schema.yaml"
 
 Here, the `schema_url` has all of the "magical" URL abilities
@@ -213,7 +211,7 @@ As an alternative, we could just as easily have said that we want to
 use the ``image`` schema from the core without defining any extra
 elements, by setting `schema_url` to::
 
-  schema_url = "http://roman.stsci.edu/schemas/image.schema.yaml"
+  schema_url = "http://romancal.stsci.edu/schemas/image.schema.yaml"
 
 .. note::
 
@@ -247,7 +245,7 @@ technically writing a new constructor for the model is optional:
 
     def __init__(self, init=None, dq=None, dq_def=None, **kwargs):
         """
-        A data model to represent MIRI bad pixel masks.
+        A data model to represent WFI bad pixel masks.
 
         Parameters
         ----------
@@ -260,7 +258,7 @@ technically writing a new constructor for the model is optional:
         dq_def : numpy array
             The data quality definitions table.
         """
-        super(MiriBadPixelMaskModel, self).__init__(init=init, **kwargs)
+        super(WFIBadPixelMaskModel, self).__init__(init=init, **kwargs)
 
         if dq is not None:
             self.dq = dq
@@ -343,7 +341,7 @@ should happen just before saving:
 .. code-block:: python
 
     def on_save(self, path):
-        super(MiriBadPixelMaskModel, self).on_save(path)
+        super(WFIBadPixelMaskModel, self).on_save(path)
 
         self.meta.bad_pixel_count = np.sum(self.mask != 0)
 
@@ -381,68 +379,7 @@ Using the new model
 The new model can now be used.  For example, to get the locations of
 all of the "hot" pixels::
 
-   from custom_model.bad_pixel_mask import MiriBadPixelMaskModel
+   from custom_model.bad_pixel_mask import WFIBadPixelMaskModel
 
-   with MiriBadPixelMaskModel("bad_pixel_mask.asdf") as dm:
+   with WFIBadPixelMaskModel("bad_pixel_mask.asdf") as dm:
        hot_pixels = dm.get_mask_for_field('HOT')
-
-A table-based model
--------------------
-
-In addition to n-dimensional data arrays, models can also contain tabular
-data. For example, the photometric correction reference file used in the
-JWST calibration pipeline consists of a table with several columns. The schema
-file for one of these models looks like this:
-
-.. code-block:: yaml
-
-    title: NIRISS SOSS photometric flux conversion data model
-    allOf:
-      - $ref: "referencefile.schema.yaml"
-      - $ref: "keyword_exptype.schema.yaml"
-      - $ref: "keyword_pexptype.schema.yaml"
-      - $ref: "keyword_pixelarea.schema.yaml"
-      - type: object
-        properties:
-          phot_table:
-            title: Photometric flux conversion factors table
-            fits_hdu: PHOTOM
-            datatype:
-              - name: filter
-                datatype: [ascii, 12]
-              - name: pupil
-                datatype: [ascii, 15]
-              - name: order
-                datatype: int16
-              - name: photmj
-                datatype: float32
-              - name: uncertainty
-                datatype: float32
-              - name: nelem
-                datatype: int16
-              - name: wavelength
-                datatype: float32
-                ndim: 1
-              - name: relresponse
-                datatype: float32
-                ndim: 1
-              - name: reluncertainty
-                datatype: float32
-                ndim: 1
-
-In this particular table the first 6 columns contain scalar entries of types
-string, float, and integer. The entries in the final 3 columns, on the other
-hand, contain 1-D float arrays (vectors). The "ndim" attribute is used to
-specify the number of dimensions the arrays are allowed to have.
-
-The corresponding python module containing the data model class is quite
-simple:
-
-.. code-block:: python
-
-    class NisSossPhotomModel(ReferenceFileModel):
-        """
-        A data model for NIRISS SOSS photom reference files.
-        """
-        schema_url = "nissoss_photom.schema"
-
